@@ -25,6 +25,7 @@ typedef enum cmd {
     CMD_WRITE_CONFIG,
     CMD_PING,
     CMD_ACLK_STATE,
+    CMD_ACLK_RETENTION,
     CMD_TOTAL_COMMANDS
 } cmd_t;
 

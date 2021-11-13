@@ -46,6 +46,7 @@ static cmd_status_t cmd_read_config_execute(char *args, char **message);
 static cmd_status_t cmd_write_config_execute(char *args, char **message);
 static cmd_status_t cmd_ping_execute(char *args, char **message);
 static cmd_status_t cmd_aclk_state(char *args, char **message);
+static cmd_status_t cmd_aclk_retention(char *args, char **message);
 
 static command_info_t command_info_array[] = {
         {"help", cmd_help_execute, CMD_TYPE_HIGH_PRIORITY},                  // show help menu
@@ -59,7 +60,8 @@ static command_info_t command_info_array[] = {
         {"read-config", cmd_read_config_execute, CMD_TYPE_CONCURRENT},
         {"write-config", cmd_write_config_execute, CMD_TYPE_ORTHOGONAL},
         {"ping", cmd_ping_execute, CMD_TYPE_ORTHOGONAL},
-        {"aclk-state", cmd_aclk_state, CMD_TYPE_ORTHOGONAL}
+        {"aclk-state", cmd_aclk_state, CMD_TYPE_ORTHOGONAL},
+        {"aclk-retention", cmd_aclk_retention, CMD_TYPE_ORTHOGONAL}
 };
 
 /* Mutexes for commands of type CMD_TYPE_ORTHOGONAL */
@@ -124,7 +126,9 @@ static cmd_status_t cmd_help_execute(char *args, char **message)
              "ping\n"
              "    Return with 'pong' if agent is alive.\n"
              "aclk-state [json]\n"
-             "    Returns current state of ACLK and Cloud connection. (optionally in json)\n",
+             "    Returns current state of ACLK and Cloud connection. (optionally in json)\n"
+             "aclk-retention\n"
+             "    Schedule a retention message to the cloud for all the nodes\n",
              MAX_COMMAND_LENGTH - 1);
     return CMD_STATUS_SUCCESS;
 }
@@ -321,6 +325,15 @@ static cmd_status_t cmd_aclk_state(char *args, char **message)
     else
         *message = aclk_state();
 
+    return CMD_STATUS_SUCCESS;
+}
+
+static cmd_status_t cmd_aclk_retention(char *args, char **message)
+{
+    UNUSED(args);
+    info("COMMAND: scheduling retention message");
+    aclk_data_rotated();
+    *message = strdupz("Retention command has been scheduled");
     return CMD_STATUS_SUCCESS;
 }
 
