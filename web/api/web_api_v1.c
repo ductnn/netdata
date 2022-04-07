@@ -519,11 +519,11 @@ inline int web_client_api_request_v1_data(RRDHOST *host, struct web_client *w, c
     }
 
     struct context_param  *context_param_list = NULL;
+    struct timeval build_context_start, build_context_end;
     if (context && !chart) {
         RRDSET *st1;
         uint32_t context_hash = simple_hash(context);
 
-        struct timeval build_context_start, build_context_end;
         now_realtime_timeval(&build_context_start);
         rrdhost_rdlock(host);
         char *words[MAX_CHART_LABELS_FILTER];
@@ -538,7 +538,7 @@ inline int web_client_api_request_v1_data(RRDHOST *host, struct web_client *w, c
         }
         rrdhost_unlock(host);
         now_realtime_timeval(&build_context_end);
-        log_access("QUERY BUILD CONTEXT TIME %0.2f ms", dt_usec(&build_context_start, &build_context_end) / 1000.0);
+//        log_access("QUERY BUILD CONTEXT TIME %0.2f ms", dt_usec(&build_context_start, &build_context_end) / 1000.0);
         if (likely(context_param_list && context_param_list->rd))  // Just set the first one
             st = context_param_list->rd->rrdset;
         else {
@@ -634,8 +634,14 @@ inline int web_client_api_request_v1_data(RRDHOST *host, struct web_client *w, c
         buffer_strcat(w->response.data, "(");
     }
 
-    if (context_param_list)
-        log_access("CONTEXT CONTAINS %u CHARTS AND %u DIMENSIONS", context_param_list->chart_count, context_param_list->dimension_count);
+    if (context_param_list) {
+        log_access(
+            "CONTEXT CONTAINS %u CHARTS AND %u DIMENSIONS QUERY BUILD CONTEXT TIME %0.2f ms",
+            context_param_list->chart_count,
+            context_param_list->dimension_count,
+            dt_usec(&build_context_start, &build_context_end) / 1000.0);
+        context_param_list->timeout = (uint32_t) timeout;
+    }
     ret = rrdset2anything_api_v1(st, w->response.data, dimensions, format,
                                  points, after, before, group, group_time,
                                  options, &last_timestamp_in_data, context_param_list,
