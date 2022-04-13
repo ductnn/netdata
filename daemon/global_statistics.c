@@ -608,6 +608,91 @@ static void global_statistics_charts(void) {
         rrdset_done(st_rrdr_points);
     }
 
+    {
+        static RRDSET *st_sqlite = NULL;
+        static RRDDIM *rd_cache_hit = NULL;
+        static RRDDIM *rd_cache_miss = NULL;
+        static RRDDIM *rd_cache_write = NULL;
+
+        if (unlikely(!st_sqlite)) {
+            st_sqlite = rrdset_create_localhost(
+                "netdata"
+                , "SQLite Cache Operations"
+                , NULL
+                , "sqlite"
+                , NULL
+                , "SQLite"
+                , "operations/s"
+                , "netdata"
+                , "stats"
+                , 130511
+                , localhost->rrd_update_every
+                , RRDSET_TYPE_LINE
+            );
+
+            rd_cache_hit = rrddim_add(st_sqlite, "cache_hits", NULL, 1, 1, RRD_ALGORITHM_INCREMENTAL);
+            rd_cache_miss = rrddim_add(st_sqlite, "cache_misses", NULL, 1, 1, RRD_ALGORITHM_INCREMENTAL);
+            rd_cache_write = rrddim_add(st_sqlite, "wal_writes", NULL, 1, 1, RRD_ALGORITHM_INCREMENTAL);
+        }
+        else
+            rrdset_next(st_sqlite);
+
+        int cache_hit = 0, ignore;
+        int cache_miss = 0;
+        int cache_write = 0;
+
+        int rc = sqlite3_db_status(db_meta,SQLITE_DBSTATUS_CACHE_HIT, &cache_hit, &ignore, 0);
+        rc = sqlite3_db_status(db_meta,SQLITE_DBSTATUS_CACHE_MISS, &cache_miss, &ignore, 0);
+        rc = sqlite3_db_status(db_meta,SQLITE_DBSTATUS_CACHE_WRITE, &cache_write, &ignore, 0);
+
+        rrddim_set_by_pointer(st_sqlite, rd_cache_hit, (collected_number) cache_hit);
+        rrddim_set_by_pointer(st_sqlite, rd_cache_miss, (collected_number) cache_miss);
+        rrddim_set_by_pointer(st_sqlite, rd_cache_write, (collected_number) cache_write);
+
+        rrdset_done(st_sqlite);
+
+        static RRDSET *st_sqlite_cache = NULL;
+        static RRDDIM *rd_cache_used = NULL;
+        static RRDDIM *rd_mem_used = NULL;
+        static RRDDIM *rd_mem_max = NULL;
+
+        if (unlikely(!st_sqlite_cache)) {
+            st_sqlite_cache = rrdset_create_localhost(
+                "netdata"
+                , "SQLite Cache Used"
+                , NULL
+                , "sqlite"
+                , NULL
+                , "SQLite"
+                , "KiB"
+                , "netdata"
+                , "stats"
+                , 130512
+                , localhost->rrd_update_every
+                , RRDSET_TYPE_LINE
+            );
+
+            rd_cache_used = rrddim_add(st_sqlite_cache, "in_use_cache", NULL, 1, 1024, RRD_ALGORITHM_ABSOLUTE);
+            rd_mem_used = rrddim_add(st_sqlite_cache, "memory_used", NULL, 1, 1024, RRD_ALGORITHM_ABSOLUTE);
+            rd_mem_max = rrddim_add(st_sqlite_cache, "max_memory_used", NULL, 1, 1024, RRD_ALGORITHM_ABSOLUTE);
+        }
+        else
+            rrdset_next(st_sqlite_cache);
+
+        int cache_used = 0;
+        sqlite3_int64 memory_used = 0;
+        sqlite3_int64 memory_used_max = 0;
+
+        rc = sqlite3_db_status(db_meta,SQLITE_DBSTATUS_CACHE_USED, &cache_used, &ignore, 0);
+        rc = sqlite3_status64(SQLITE_STATUS_MEMORY_USED, &memory_used, &memory_used_max, 0);
+
+        rrddim_set_by_pointer(st_sqlite_cache, rd_cache_used, (collected_number) cache_hit);
+        rrddim_set_by_pointer(st_sqlite_cache, rd_mem_used, (collected_number) memory_used);
+        rrddim_set_by_pointer(st_sqlite_cache, rd_mem_max, (collected_number) memory_used_max);
+
+        rrdset_done(st_sqlite_cache);
+    }
+
     // ----------------------------------------------------------------
 
 #ifdef ENABLE_DBENGINE
