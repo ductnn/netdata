@@ -640,7 +640,6 @@ inline int web_client_api_request_v1_data(RRDHOST *host, struct web_client *w, c
             context_param_list->chart_count,
             context_param_list->dimension_count,
             dt_usec(&build_context_start, &build_context_end) / 1000.0);
-        context_param_list->timeout = (uint32_t) timeout;
     }
     ret = rrdset2anything_api_v1(st, w->response.data, dimensions, format,
                                  points, after, before, group, group_time,
