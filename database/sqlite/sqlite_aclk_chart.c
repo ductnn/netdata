@@ -982,42 +982,42 @@ void aclk_update_retention(struct aclk_database_worker_config *wc, struct aclk_d
         if (likely(!rc && first_entry_t))
             start_time = MIN(start_time, first_entry_t);
 
-        if (memory_mode == RRD_MEMORY_MODE_DBENGINE && wc->chart_updates && (dimension_update_count < ACLK_MAX_DIMENSION_CLEANUP)) {
-            int live = ((now - last_entry_t) < (RRDSET_MINIMUM_DIM_LIVE_MULTIPLIER * update_every));
-            if (!wc->host || !first_entry_t) {
-                (void)aclk_upd_dimension_event(
-                    wc,
-                    claim_id,
-                    (uuid_t *)sqlite3_column_blob(res, 0),
-                    (const char *)(const char *)sqlite3_column_text(res, 3),
-                    (const char *)(const char *)sqlite3_column_text(res, 4),
-                    (const char *)(const char *)sqlite3_column_text(res, 2),
-                    first_entry_t,
-                    live ? 0 : last_entry_t,
-                    &send_status);
-
-                if (!send_status) {
-                    if (!first_entry_t) {
-                        total_deleted++;
-                        info("Host %s (node %s) deleting dimension id=[%s] name=[%s] chart=[%s]",
-                             wc->host_guid, wc->node_id,
-                             (const char *) sqlite3_column_text(res, 3), (const char *)(const char *)sqlite3_column_text(res, 4), (const char *)(const char *)sqlite3_column_text(res, 2));
-                    }
-                    if (last_entry_t) {
-                        total_stopped++;
-                        info("Host %s (node %s) stopped collecting dimension id=[%s] name=[%s] chart=[%s] %ld seconds ago at %ld",
-                             wc->host_guid, wc->node_id, (const char *) sqlite3_column_text(res, 3), (const char *)(const char *)sqlite3_column_text(res, 4),
-                             (const char *)(const char *)sqlite3_column_text(res, 2), now_realtime_sec() - last_entry_t, last_entry_t);
-                    }
-                    dimension_update_count++;
-                }
-//                else
-//                    info("Host %s (node %s) OK dimension id=[%s] name=[%s] chart=[%s] Sent at %ld (%ld seconds ago)",
-//                         wc->host_guid, wc->node_id,
-//                         (const char *) sqlite3_column_text(res, 3), (const char *)(const char *)sqlite3_column_text(res, 4), (const char *)(const char *)sqlite3_column_text(res, 2),
-//                         send_status, now_realtime_sec() - send_status);
-            }
-        }
+//        if (memory_mode == RRD_MEMORY_MODE_DBENGINE && wc->chart_updates && (dimension_update_count < ACLK_MAX_DIMENSION_CLEANUP)) {
+//            int live = ((now - last_entry_t) < (RRDSET_MINIMUM_DIM_LIVE_MULTIPLIER * update_every));
+//            if (!wc->host || !first_entry_t) {
+//                (void)aclk_upd_dimension_event(
+//                    wc,
+//                    claim_id,
+//                    (uuid_t *)sqlite3_column_blob(res, 0),
+//                    (const char *)(const char *)sqlite3_column_text(res, 3),
+//                    (const char *)(const char *)sqlite3_column_text(res, 4),
+//                    (const char *)(const char *)sqlite3_column_text(res, 2),
+//                    first_entry_t,
+//                    live ? 0 : last_entry_t,
+//                    &send_status);
+//
+//                if (!send_status) {
+//                    if (!first_entry_t) {
+//                        total_deleted++;
+//                        info("Host %s (node %s) deleting dimension id=[%s] name=[%s] chart=[%s]",
+//                             wc->host_guid, wc->node_id,
+//                             (const char *) sqlite3_column_text(res, 3), (const char *)(const char *)sqlite3_column_text(res, 4), (const char *)(const char *)sqlite3_column_text(res, 2));
+//                    }
+//                    if (last_entry_t) {
+//                        total_stopped++;
+//                        info("Host %s (node %s) stopped collecting dimension id=[%s] name=[%s] chart=[%s] %ld seconds ago at %ld",
+//                             wc->host_guid, wc->node_id, (const char *) sqlite3_column_text(res, 3), (const char *)(const char *)sqlite3_column_text(res, 4),
+//                             (const char *)(const char *)sqlite3_column_text(res, 2), now_realtime_sec() - last_entry_t, last_entry_t);
+//                    }
+//                    dimension_update_count++;
+//                }
+////                else
+////                    info("Host %s (node %s) OK dimension id=[%s] name=[%s] chart=[%s] Sent at %ld (%ld seconds ago)",
+////                         wc->host_guid, wc->node_id,
+////                         (const char *) sqlite3_column_text(res, 3), (const char *)(const char *)sqlite3_column_text(res, 4), (const char *)(const char *)sqlite3_column_text(res, 2),
+////                         send_status, now_realtime_sec() - send_status);
+//            }
+//        }
         total_checked++;
     }
     if (update_every) {

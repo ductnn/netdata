@@ -7,8 +7,8 @@ static inline void free_single_rrdrim(RRDDIM *temp_rd, int archive_mode)
     if (unlikely(!temp_rd))
         return;
 
-    freez((char *)temp_rd->id);
-    freez((char *)temp_rd->name);
+    //freez((char *)temp_rd->id);
+    //freez((char *)temp_rd->name);
 
     if (unlikely(archive_mode)) {
         temp_rd->rrdset->counter--;
@@ -18,7 +18,7 @@ static inline void free_single_rrdrim(RRDDIM *temp_rd, int archive_mode)
             freez(temp_rd->rrdset);
         }
     }
-    freez(temp_rd->state);
+   // freez(temp_rd->state);
     freez(temp_rd);
 }
 
@@ -91,20 +91,43 @@ void build_context_param_list(struct context_param **param_list, RRDSET *st)
     time_t last_entry_t = 0;
     time_t first_entry_t = LONG_MAX;
 
+//    rrddim_foreach_read(rd1, st) {
+//        RRDDIM *rd = mallocz(rd1->memsize);
+//        memcpy(rd, rd1, rd1->memsize);
+//        rd->id = strdupz(rd1->id);
+//        rd->name = strdupz(rd1->name);
+//        rd->state = mallocz(sizeof(*rd->state));
+//        memcpy(rd->state, rd1->state, sizeof(*rd->state));
+//        //memcpy(&rd->state->collect_ops, &rd1->state->collect_ops, sizeof(struct rrddim_collect_ops));
+//        memcpy(&rd->state->query_ops, &rd1->state->query_ops, sizeof(struct rrddim_query_ops));
+//        rd->next = (*param_list)->rd;
+//        (*param_list)->rd = rd;
+//        (*param_list)->dimension_count++;
+//        (*param_list)->first_entry_t = MIN((*param_list)->first_entry_t, rrddim_first_entry_t_nolock(rd));
+//        (*param_list)->last_entry_t = MAX((*param_list)->last_entry_t, rrddim_last_entry_t_nolock(rd));
+//    }
     rrddim_foreach_read(rd1, st) {
-        RRDDIM *rd = mallocz(rd1->memsize);
+        size_t idlen = strlen(rd1->id);
+        size_t namelen = strlen(rd1->name);
+
+        size_t fullsize = rd1->memsize + idlen + 1 + namelen + 1 + sizeof(*rd1->state);
+        char *buff = mallocz(fullsize);
+
+        RRDDIM *rd = (RRDDIM *)buff;
         memcpy(rd, rd1, rd1->memsize);
-        rd->id = strdupz(rd1->id);
-        rd->name = strdupz(rd1->name);
-        rd->state = mallocz(sizeof(*rd->state));
+
+        rd->id = &buff[rd1->memsize];
+        strcpy((char *)rd->id, rd1->id);
+
+        rd->name = &buff[rd1->memsize + idlen + 1];
+        strcpy((char *)rd->name, rd1->name);
+
+        rd->state = (struct rrddim_volatile *)&buff[rd1->memsize + idlen + 1 + namelen + 1];
         memcpy(rd->state, rd1->state, sizeof(*rd->state));
-        //memcpy(&rd->state->collect_ops, &rd1->state->collect_ops, sizeof(struct rrddim_collect_ops));
+        memcpy(&rd->state->collect_ops, &rd1->state->collect_ops, sizeof(struct rrddim_collect_ops));
         memcpy(&rd->state->query_ops, &rd1->state->query_ops, sizeof(struct rrddim_query_ops));
         rd->next = (*param_list)->rd;
         (*param_list)->rd = rd;
-        (*param_list)->dimension_count++;
-        (*param_list)->first_entry_t = MIN((*param_list)->first_entry_t, rrddim_first_entry_t_nolock(rd));
-        (*param_list)->last_entry_t = MAX((*param_list)->last_entry_t, rrddim_last_entry_t_nolock(rd));
     }
 
     rrdset_unlock(st);
