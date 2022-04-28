@@ -84,9 +84,12 @@ void build_context_param_list(struct context_param **param_list, RRDSET *st)
     st->last_accessed_time = now_realtime_sec();
     rrdset_rdlock(st);
 
-    (*param_list)->first_entry_t = MIN((*param_list)->first_entry_t, rrdset_first_entry_t_nolock(st));
-    (*param_list)->last_entry_t  = MAX((*param_list)->last_entry_t, rrdset_last_entry_t_nolock(st));
+    //(*param_list)->first_entry_t = MIN((*param_list)->first_entry_t, rrdset_first_entry_t_nolock(st));
+    //(*param_list)->last_entry_t  = MAX((*param_list)->last_entry_t, rrdset_last_entry_t_nolock(st));
     (*param_list)->chart_count++;
+
+    time_t last_entry_t = 0;
+    time_t first_entry_t = LONG_MAX;
 
     rrddim_foreach_read(rd1, st) {
         RRDDIM *rd = mallocz(rd1->memsize);
@@ -100,6 +103,8 @@ void build_context_param_list(struct context_param **param_list, RRDSET *st)
         rd->next = (*param_list)->rd;
         (*param_list)->rd = rd;
         (*param_list)->dimension_count++;
+        (*param_list)->first_entry_t = MIN((*param_list)->first_entry_t, rrddim_first_entry_t_nolock(rd));
+        (*param_list)->last_entry_t = MAX((*param_list)->last_entry_t, rrddim_last_entry_t_nolock(rd));
     }
 
     rrdset_unlock(st);
