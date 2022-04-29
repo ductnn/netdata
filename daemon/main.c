@@ -1092,6 +1092,7 @@ int main(int argc, char **argv) {
 
         // prepare configuration environment variables for the plugins
 
+        setenv("UV_THREADPOOL_SIZE", "1024", 1);
         get_netdata_configured_variables();
         set_global_environment();
 
