@@ -17,6 +17,7 @@ struct aclk_request {
     char *callback_topic;
     char *payload;
     int version;
+    int timeout;
     int min_version;
     int max_version;
 };
@@ -164,6 +165,7 @@ static int aclk_handle_cloud_http_request_v2(struct aclk_request *cloud_to_agent
     // it would be strange to get URL from `dedup_id`
     query->data.http_api_v2.query = query->dedup_id;
     query->msg_id = cloud_to_agent->msg_id;
+    query->timeout = cloud_to_agent->timeout;
     aclk_queue_query(query);
     return 0;
 
@@ -172,10 +174,13 @@ error:
     return 1;
 }
 
+#define ACLK_CLOUD_DEFAULT_TIMEOUT (15000)
+
 int aclk_handle_cloud_cmd_message(char *payload)
 {
     struct aclk_request cloud_to_agent;
     memset(&cloud_to_agent, 0, sizeof(struct aclk_request));
+    cloud_to_agent.timeout = ACLK_CLOUD_DEFAULT_TIMEOUT;
 
     if (unlikely(!payload)) {
         error_report("ACLK incoming 'cmd' message is empty");

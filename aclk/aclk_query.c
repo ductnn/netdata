@@ -86,6 +86,7 @@ static int http_api_v2(struct aclk_query_thread *query_thr, aclk_query_t query)
 {
     int retval = 0;
     usec_t t;
+    struct timeval before_mqtt;
     BUFFER *local_buffer = NULL;
     BUFFER *log_buffer = buffer_create(NETDATA_WEB_REQUEST_URL_SIZE);
     RRDHOST *query_host = localhost;
@@ -110,6 +111,17 @@ static int http_api_v2(struct aclk_query_thread *query_thr, aclk_query_t query)
     size_t sent = 0;
     w->tv_in = query->created_tv;
     now_realtime_timeval(&w->tv_ready);
+
+    if ((dt_usec(&query->created_tv, &w->tv_ready) / 1000.0) > query->timeout) {
+        log_access("QUERY CANCELED QUEUE TIME EXCEEDED %0.2f ms (LIMIT %d ms)",
+                   dt_usec(&query->created_tv, &w->tv_ready) / 1000.0, query->timeout);
+
+        retval = 1;
+        now_realtime_timeval(&before_mqtt);
+        w->response.code = HTTP_RESP_BACKEND_FETCH_FAILED;
+        aclk_http_msg_v2_err(query_thr->client, query->callback_topic, query->msg_id, w->response.code, CLOUD_EC_SND_TIMEOUT, CLOUD_EMSG_SND_TIMEOUT, NULL, 0);
+        goto cleanup;
+    }
 
     RRDHOST *temp_host = NULL;
     if (!strncmp(query->data.http_api_v2.query, NODE_ID_QUERY, strlen(NODE_ID_QUERY))) {
@@ -231,7 +243,6 @@ static int http_api_v2(struct aclk_query_thread *query_thr, aclk_query_t query)
     }
 
     // send msg.
-    struct timeval before_mqtt;
     now_realtime_timeval(&before_mqtt);
     aclk_http_msg_v2(query_thr->client, query->callback_topic, query->msg_id, t, query->created, w->response.code, local_buffer->buffer, local_buffer->len);
 
