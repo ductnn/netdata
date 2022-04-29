@@ -593,6 +593,19 @@ inline int web_client_api_request_v1_data(RRDHOST *host, struct web_client *w, c
     long      group_time = (group_time_str && *group_time_str)?str2l(group_time_str):0;
     int       max_anomaly_rates = (max_anomaly_rates_str && *max_anomaly_rates_str) ? str2i(max_anomaly_rates_str) : 0;
 
+    if (timeout) {
+        int inqueue = (int ) dt_usec(&w->tv_in, &w->tv_ready) / 1000;
+        if (inqueue) {
+            log_access("QUERY TIMEOUT %d, IN QUEUE %d SET TO %d", timeout, inqueue, timeout - inqueue);
+            timeout = timeout - inqueue;
+            if (timeout <= 0) {
+                buffer_flush(w->response.data);
+                buffer_strcat(w->response.data, "Query timeout exceeded");
+                return HTTP_RESP_BACKEND_FETCH_FAILED;
+            }
+        }
+    }
+
     debug(D_WEB_CLIENT, "%llu: API command 'data' for chart '%s', dimensions '%s', after '%lld', before '%lld', points '%d', group '%d', format '%u', options '0x%08x'"
           , w->id
           , chart
