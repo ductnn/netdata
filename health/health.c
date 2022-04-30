@@ -666,6 +666,8 @@ static void init_pending_foreach_alarms(RRDHOST *host) {
 
             rrdset_foreach_read(st, host) {
                 rrdset_wrlock(st);
+                rrdsetcalc_link_matching(st);
+                rrdcalctemplate_link_matching(st);
 
                 if (rrdset_flag_check(st, RRDSET_FLAG_PENDING_FOREACH_ALARMS)) {
                     RRDDIM *rd;
@@ -747,6 +749,7 @@ void *health_main(void *ptr) {
             marked_aclk_reload_loop = loop;
 #endif
 
+        int loop_loader = 0;
         rrd_rdlock();
 
         RRDHOST *host;
@@ -769,6 +772,29 @@ void *health_main(void *ptr) {
 
                 info("Resuming health checks on host '%s'.", host->hostname);
                 host->health_delay_up_to = 0;
+            }
+
+            if (rrdhost_flag_check(host, RRDHOST_FLAG_HEALTH_LOAD)) {
+                if (loop_loader)
+                    continue;
+                loop_loader++;
+                rrdhost_flag_clear(host, RRDHOST_FLAG_HEALTH_LOAD);
+                rrdhost_wrlock(host);
+                if (!file_is_migrated(host->health_log_filename)) {
+                    int rc = sql_create_health_log_table(host);
+                    if (unlikely(rc)) {
+                        error_report("Failed to create health log table in the database");
+                        health_alarm_log_load(host);
+                        health_alarm_log_open(host);
+                    } else {
+                        health_alarm_log_load(host);
+                        add_migrated_file(host->health_log_filename, 0);
+                    }
+                } else {
+                    sql_create_health_log_table(host);
+                    sql_health_alarm_log_load(host);
+                }
+                rrdhost_unlock(host);
             }
 
             if(likely(!host->health_log_fp) && (loop == 1 || loop % cleanup_sql_every_loop == 0))
