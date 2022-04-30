@@ -1004,9 +1004,9 @@ void aclk_update_retention(struct aclk_database_worker_config *wc, struct aclk_d
                 if (!send_status) {
                     if (!first_entry_t) {
                         total_deleted++;
-                        info("Host %s (node %s) deleting dimension id=[%s] name=[%s] chart=[%s]",
-                             wc->host_guid, wc->node_id,
-                             (const char *) sqlite3_column_text(res, 3), (const char *)(const char *)sqlite3_column_text(res, 4), (const char *)(const char *)sqlite3_column_text(res, 2));
+//                        info("Host %s (node %s) deleting dimension id=[%s] name=[%s] chart=[%s]",
+//                             wc->host_guid, wc->node_id,
+//                             (const char *) sqlite3_column_text(res, 3), (const char *)(const char *)sqlite3_column_text(res, 4), (const char *)(const char *)sqlite3_column_text(res, 2));
                         delete_dimension_uuid((uuid_t *)sqlite3_column_blob(res, 0));
                     }
                     if (last_entry_t) {
