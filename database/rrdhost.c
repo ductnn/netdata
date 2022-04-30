@@ -310,7 +310,7 @@ RRDHOST *rrdhost_create(const char *hostname,
         if (unlikely(rc))
             error_report("Failed to store machine GUID to the database");
         sql_load_node_id(host);
-        if (host->health_enabled) {
+        if (host == localhost && host->health_enabled) {
             if (!file_is_migrated(host->health_log_filename)) {
                 int rc = sql_create_health_log_table(host);
                 if (unlikely(rc)) {
@@ -327,6 +327,8 @@ RRDHOST *rrdhost_create(const char *hostname,
                 sql_health_alarm_log_load(host);
             }
         }
+        else
+            rrdhost_flag_set(host, RRDHOST_FLAG_HEALTH_LOAD);
     }
     else
         error_report("Host machine GUID %s is not valid", host->machine_guid);

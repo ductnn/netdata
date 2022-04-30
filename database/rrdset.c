@@ -701,8 +701,10 @@ RRDSET *rrdset_create_custom(
             rrdsetvar_create(st, "green",               RRDVAR_TYPE_CALCULATED, &st->green,                      RRDVAR_OPTION_DEFAULT);
             rrdsetvar_create(st, "red",                 RRDVAR_TYPE_CALCULATED, &st->red,                        RRDVAR_OPTION_DEFAULT);
             rrdsetvar_create(st, "update_every",        RRDVAR_TYPE_INT,        &st->update_every,               RRDVAR_OPTION_DEFAULT);
-            rrdsetcalc_link_matching(st);
-            rrdcalctemplate_link_matching(st);
+            if (host == localhost || !(rrdhost_flag_check(host, RRDHOST_FLAG_PENDING_FOREACH_ALARMS))) {
+                rrdsetcalc_link_matching(st);
+                rrdcalctemplate_link_matching(st);
+            }
         }
         rrdhost_unlock(host);
         rrdset_flag_set(st, RRDSET_FLAG_SYNC_CLOCK);
@@ -927,8 +929,10 @@ RRDSET *rrdset_create_custom(
     if(unlikely(rrdset_index_add(host, st) != st))
         error("RRDSET: INTERNAL ERROR: attempt to index duplicate chart '%s'", st->id);
 
-    rrdsetcalc_link_matching(st);
-    rrdcalctemplate_link_matching(st);
+    if (host == localhost || !(rrdhost_flag_check(host, RRDHOST_FLAG_PENDING_FOREACH_ALARMS))) {
+        rrdsetcalc_link_matching(st);
+        rrdcalctemplate_link_matching(st);
+    }
 
     st->chart_uuid = find_chart_uuid(host, type, id, name);
     if (unlikely(!st->chart_uuid))
